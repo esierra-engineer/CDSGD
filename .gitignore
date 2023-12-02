@@ -7,3 +7,4 @@ credentials.json
 *.bin
 *.df.gzip
 ds
+.vscode
