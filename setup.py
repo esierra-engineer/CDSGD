@@ -21,6 +21,7 @@ setuptools.setup(
         'pandas',
         'scikit-learn',
         'torch',
-        'dill'
+        'dill',
+        'dsgd @ git+https://github.com/Sergio-P/DSGD.git'
     ],
 )
