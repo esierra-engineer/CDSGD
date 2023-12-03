@@ -22,9 +22,9 @@ setuptools.setup(
         'scikit-learn',
         'torch',
         'dill',
-        'pip @ https://github.com/Sergio-P/DSGD.git'
+        'pip @ https://github.com/Sergio-P/DSGD'
     ],
     dependency_links=[
-        'git+https://github.com/Sergio-P/DSGD.gitr'
+        'git+https://github.com/Sergio-P/DSGD.git'
     ],
 )
