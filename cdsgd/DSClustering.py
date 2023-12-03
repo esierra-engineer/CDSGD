@@ -1,7 +1,11 @@
 from typing import Union
+import subprocess
+import sys
 import ClusteringSelector as cs
-from ...dsgd import *
 
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "git+https://github.com/Sergio-P/DSGD.git"])
+from dsgd.DSClassifierMultiQ import DSClassifierMultiQ
 
 class DSClustering(DSClassifierMultiQ):
     """
