@@ -1,7 +1,7 @@
 from typing import Union
 # import subprocess
 # import sys
-import ClusteringSelector as cs
+from .ClusteringSelector import ClusteringSelector
 
 
 # subprocess.check_call([sys.executable, "-m", "pip", "install", "git+https://github.com/Sergio-P/DSGD.git"])
@@ -17,7 +17,7 @@ class DSClustering(DSClassifierMultiQ):
                  lossfn: str = "MSE", num_workers: int = 0,
                  min_dloss: float = 1e-7):
         self.data = data
-        selector = cs.ClusteringSelector(self.data, cluster)
+        selector = ClusteringSelector(self.data, cluster)
         selector.select_best_clustering()
         self.cluster_labels_df = selector.get_cluster_labels_df()
         if not most_voted:
@@ -27,5 +27,5 @@ class DSClustering(DSClassifierMultiQ):
         self.cluster = cluster if cluster is not None else len(set(self.best))
         super().__init__(self.cluster, min_iter=min_iter,
                          max_iter=max_iter, debug_mode=debug_mode,
-                         lossfn="lossfn", num_workers=num_workers,
+                         lossfn=lossfn, num_workers=num_workers,
                          min_dloss=min_dloss)
