@@ -76,7 +76,7 @@ class DSClustering(DSClassifierMultiQ):
         labels to new or unseen data points based on the learned clustering
         patterns. Returns a list of predicted cluster labels.
         """
-        _, _, _ = self.fit(self)
+        _, _, _ = self.fit()
         self.y_pred = super().predict(self.df_with_labels.values)
 
         return self.y_pred
