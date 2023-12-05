@@ -120,9 +120,12 @@ class DSClustering(DSClassifierMultiQ):
         if y is not None:
             y = ClusteringSelector.normalize_labels(self.y_pred, y)
             print("Information of DSClassifier")
-            print("\nAccuracy: %.1f%%" % (accuracy_score(y, self.y_pred) * 100.))
-            print("F1 Macro: %.3f" % (f1_score(y, self.y_pred, average="macro")))
-            print("F1 Micro: %.3f" % (f1_score(y, self.y_pred, average="micro")))
+            print("\nAccuracy: %.1f%%" %
+                  (accuracy_score(y, self.y_pred) * 100.))
+            print("F1 Macro: %.3f" %
+                  (f1_score(y, self.y_pred, average="macro")))
+            print("F1 Micro: %.3f" %
+                  (f1_score(y, self.y_pred, average="micro")))
             print("\nConfusion Matrix:")
             print(confusion_matrix(y, self.y_pred))
             print("------------------")
@@ -132,9 +135,8 @@ class DSClustering(DSClassifierMultiQ):
             print("Rand_index: ", rand_index)
             print("Pearson: ", pearson_corr)
         print("------------------------------------------------")
-        print("Silhoutte:" , (silhouette_score(self.data, self.y_pred)
-                                 if len(set(self.y_pred)) > 2 else 0))
-
+        print("Silhoutte: ", (silhouette_score(self.data, self.y_pred)
+                              if len(set(self.y_pred)) > 2 else 0))
 
     def predict_explain(self, x):
         """
