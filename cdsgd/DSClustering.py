@@ -3,8 +3,8 @@ import pandas as pd
 from dsgd.DSClassifierMultiQ import DSClassifierMultiQ
 from sklearn.model_selection import train_test_split
 from .ClusteringSelector import ClusteringSelector
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.metrics import confusion_matrix, adjusted_rand_score
+from sklearn.metrics import accuracy_score, f1_score, silhouette_score
+from sklearn.metrics import confusion_matrix, adjusted_rand_score,
 from scipy.stats import pearsonr
 
 
@@ -58,7 +58,7 @@ class DSClustering(DSClassifierMultiQ):
         """
         X_train, _, y_train, _ = train_test_split(self.df_with_labels.values,
                                                   self.best,
-                                                  test_size=0.4,
+                                                  test_size=0.6,
                                                   random_state=42)
         losses, epoch, dt = super().fit(X_train, y_train,
                                         add_single_rules=True,
@@ -109,7 +109,7 @@ class DSClustering(DSClassifierMultiQ):
                                                    else "Unc", masses[j])
         print(builder)
 
-    def metrics(self, y):
+    def metrics(self, y=None):
         """
         Evaluates and returns the performance metrics of the clustering model.
         This method calculates various metrics such as accuracy, F1 score, and
@@ -117,16 +117,24 @@ class DSClustering(DSClassifierMultiQ):
         Useful for quantitatively evaluating the effectiveness of the
         clustering.
         """
-        y = ClusteringSelector.normalize_labels(self.y_pred, y)
-        print("\nAccuracy: %.1f%%" % (accuracy_score(y, self.y_pred) * 100.))
-        print("F1 Macro: %.3f" % (f1_score(y, self.y_pred, average="macro")))
-        print("F1 Micro: %.3f" % (f1_score(y, self.y_pred, average="micro")))
-        print("\nConfusion Matrix:")
-        print(confusion_matrix(y, self.y_pred))
-        rand_index = adjusted_rand_score(y, self.y_pred)
-        pearson_corr, _ = pearsonr(self.y_pred, y)
-        print("Rand_index: ", rand_index)
-        print("Pearson: ", pearson_corr)
+        if y is not None:
+            y = ClusteringSelector.normalize_labels(self.y_pred, y)
+            print("Information of DSClassifier")
+            print("\nAccuracy: %.1f%%" % (accuracy_score(y, self.y_pred) * 100.))
+            print("F1 Macro: %.3f" % (f1_score(y, self.y_pred, average="macro")))
+            print("F1 Micro: %.3f" % (f1_score(y, self.y_pred, average="micro")))
+            print("\nConfusion Matrix:")
+            print(confusion_matrix(y, self.y_pred))
+            print("------------------")
+            print("Clustering Metrics")
+            rand_index = adjusted_rand_score(y, self.y_pred)
+            pearson_corr, _ = pearsonr(self.y_pred, y)
+            print("Rand_index: ", rand_index)
+            print("Pearson: ", pearson_corr)
+        print("------------------------------------------------")
+        print("Silhoutte:" , (silhouette_score(self.data, self.y_pred)
+                                 if len(set(self.y_pred)) > 2 else 0))
+
 
     def predict_explain(self, x):
         """
