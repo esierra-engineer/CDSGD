@@ -45,8 +45,8 @@ class DSClustering(DSClassifierMultiQ):
         points are assigned to various clusters, particularly useful for
         categorical data
         """
-        super().model.generate_categorical_rules(self.cluster_labels_df.values,
-                                                 column_names=self.cluster_labels_df.columns)
+        self.model.generate_categorical_rules(self.cluster_labels_df.values,
+                                              column_names=self.cluster_labels_df.columns)
 
     def fit(self):
         """
