@@ -136,7 +136,7 @@ class ClusteringSelector:
             self.best_labels = dbscan_labels
 
         if self.best_algorithm == "DBSCAN":
-            clusters = len(set(self.best_labels))
+            clusters = max(self.best_labels) + 1
             # Since the classifier does not work with negative classes,
             # it is necessary to adjust the labels that do not belong to any
             # cluster and are labeled as the last cluster.
