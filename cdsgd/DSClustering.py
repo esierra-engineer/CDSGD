@@ -30,8 +30,9 @@ class DSClustering(DSClassifierMultiQ):
         else:
             self.best = self.selector.get_most_voted()
         self.cluster = cluster if cluster is not None else len(set(self.best))
-        self.df_with_labels = pd.concat([self.data, self.cluster_labels_df],
-                                        axis=1)
+        self.df_with_labels = pd.concat([self.data.reset_index(drop=True),
+                                         self.cluster_labels_df.reset_index(drop=True)],
+                                         axis=1)
         super().__init__(self.cluster, min_iter=min_iter,
                          max_iter=max_iter, debug_mode=debug_mode,
                          lossfn=lossfn, num_workers=num_workers,
