@@ -71,8 +71,7 @@ class ClusteringSelector:
 
         for n_clusters in self.n_clusters_values:
             # K-Means
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42,
-                            n_init="auto")
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
             kmeans_labels = kmeans.fit_predict(self.data)
             # Calculate metrics
             kmeans_silhouette = (silhouette_score(self.data, kmeans_labels)
