@@ -1,5 +1,6 @@
 from typing import Union
 import pandas as pd
+import torch
 from dsgd.DSClassifierMultiQ import DSClassifierMultiQ
 from sklearn.model_selection import train_test_split
 from .ClusteringSelector import ClusteringSelector
@@ -20,9 +21,13 @@ class DSClustering(DSClassifierMultiQ):
                  most_voted: bool = False, min_iter: int = 50,
                  max_iter: int = 400, debug_mode: bool = True,
                  lossfn: str = "MSE", num_workers: int = 0,
-                 min_dloss: float = 1e-7):
+                 min_dloss: float = 1e-7, use_cuda: bool = True,
+                 train_size: float = 0.4, n_jobs: int = -1):
         self.data = data
-        self.selector = ClusteringSelector(self.data, cluster)
+        self.use_cuda = use_cuda
+        self.device = torch.device('cuda' if use_cuda and torch.cuda.is_available() else 'cpu')
+        self.train_size = train_size
+        self.selector = ClusteringSelector(self.data, cluster, n_jobs=n_jobs)
         self.selector.select_best_clustering()
         self.cluster_labels_df = self.selector.get_cluster_labels_df()
         if not most_voted:
@@ -59,9 +64,18 @@ class DSClustering(DSClassifierMultiQ):
         """
         X_train, _, y_train, _ = train_test_split(self.df_with_labels.values,
                                                   self.best,
-                                                  test_size=0.6,
+                                                  test_size=1.0 - self.train_size,
                                                   random_state=42)
-        result = super().fit(X_train, y_train,
+
+        # Convert to tensors and move to device (GPU if available)
+        if self.use_cuda and torch.cuda.is_available():
+            X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(self.device)
+            y_train_tensor = torch.tensor(y_train, dtype=torch.long).to(self.device)
+        else:
+            X_train_tensor = X_train
+            y_train_tensor = y_train
+
+        result = super().fit(X_train_tensor, y_train_tensor,
                            add_single_rules=True,
                            single_rules_breaks=3,
                            add_mult_rules=True,
@@ -84,7 +98,18 @@ class DSClustering(DSClassifierMultiQ):
         patterns. Returns a list of predicted cluster labels.
         """
         _, _, _ = self.fit()
-        self.y_pred = super().predict(self.df_with_labels.values)
+
+        # Convert to tensor and move to device if using CUDA
+        if self.use_cuda and torch.cuda.is_available():
+            X_tensor = torch.tensor(self.df_with_labels.values, dtype=torch.float32).to(self.device)
+            y_pred_tensor = super().predict(X_tensor)
+            # Move predictions back to CPU and convert to numpy
+            if isinstance(y_pred_tensor, torch.Tensor):
+                self.y_pred = y_pred_tensor.cpu().numpy()
+            else:
+                self.y_pred = y_pred_tensor
+        else:
+            self.y_pred = super().predict(self.df_with_labels.values)
 
         return self.y_pred
 
