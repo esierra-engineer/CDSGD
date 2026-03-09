@@ -8,3 +8,8 @@ credentials.json
 *.df.gzip
 ds
 .vscode
+
+# Build artifacts
+*.egg-info/
+build/
+dist/
