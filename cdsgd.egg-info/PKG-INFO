@@ -1,0 +1,31 @@
+Metadata-Version: 2.4
+Name: cdsgd
+Version: 0.1
+Summary: Tabular interpretable clustering based on Dempster-Shafer                 Theory and Gradient Descent
+Home-page: https://github.com/ricardo-valdivia/CDSGD
+Author: Ricardo Valdivia
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: torch
+Requires-Dist: dill
+Requires-Dist: dsgd @ git+https://github.com/Sergio-P/DSGD.git
+Dynamic: author
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: summary
+
+# DSClustering
+
+Tabular interpretable clustering based on Dempster-Shafer Theory and 
+Gradient Descent
+
+
+## Description
+
+This repository contains 1 implementation of the clustering:
+
+- `DSClustering`

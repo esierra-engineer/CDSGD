@@ -61,14 +61,20 @@ class DSClustering(DSClassifierMultiQ):
                                                   self.best,
                                                   test_size=0.6,
                                                   random_state=42)
-        losses, epoch, dt = super().fit(X_train, y_train,
-                                        add_single_rules=True,
-                                        single_rules_breaks=3,
-                                        add_mult_rules=True,
-                                        column_names=self.df_with_labels.columns,
-                                        print_every_epochs=31,
-                                        print_final_model=False)
-        return losses, epoch, dt
+        result = super().fit(X_train, y_train,
+                           add_single_rules=True,
+                           single_rules_breaks=3,
+                           add_mult_rules=True,
+                           column_names=self.df_with_labels.columns,
+                           print_every_epochs=31,
+                           print_final_model=False)
+        # Handle different return values based on debug_mode
+        if self.debug_mode:
+            losses, epoch, dt = result
+            return losses, epoch, dt
+        else:
+            losses, epoch = result
+            return losses, epoch, None
 
     def predict(self):
         """
