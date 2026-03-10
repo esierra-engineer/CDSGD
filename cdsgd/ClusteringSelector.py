@@ -3,6 +3,7 @@ from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.metrics import silhouette_score
 import pandas as pd
 import numpy as np
+from joblib import Parallel, delayed
 
 
 class ClusteringSelector:
@@ -39,12 +40,13 @@ class ClusteringSelector:
                                    with DBSCAN.
         n_clusters_values (list): Different numbers of clusters to be tested.
     """
-    def __init__(self, data: pd.DataFrame, cluster:  Union[int, None] = None):
+    def __init__(self, data: pd.DataFrame, cluster:  Union[int, None] = None, n_jobs: int = -1):
         self.data = data
         self.best_algorithm = None
         self.best_params = [0]*5
         self.best_labels = None
         self.cluster = cluster
+        self.n_jobs = n_jobs  # -1 means use all available cores
         self.kmeans_labels = None
         self.agglomerative_labels = None
         self.dbscan_labels = None
@@ -64,75 +66,94 @@ class ClusteringSelector:
         The method updates the class attributes with the best-performing
         algorithm's name, parameters, and labels.
         """
+        # Helper function for K-Means evaluation
+        def eval_kmeans(n_clusters):
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            labels = kmeans.fit_predict(self.data)
+            score = silhouette_score(self.data, labels) if len(set(labels)) > 2 else 0
+            return n_clusters, labels, score
+
+        # Helper function for Agglomerative Clustering evaluation
+        def eval_agglomerative(n_clusters, linkage):
+            aggclust = AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
+            labels = aggclust.fit_predict(self.data)
+            score = silhouette_score(self.data, labels) if len(set(labels)) > 2 else 0
+            return n_clusters, linkage, labels, score
+
+        # Helper function for DBSCAN evaluation
+        def eval_dbscan(eps, min_samples):
+            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+            labels = dbscan.fit_predict(self.data)
+            score = silhouette_score(self.data, labels) if len(set(labels)) > 2 else 0
+            return eps, min_samples, labels, score
+
         # Test Parameters
         best_score_dbscan = float('-inf')
         best_score_kmeans = float('-inf')
         best_score_aggclust = float('-inf')
 
-        for n_clusters in self.n_clusters_values:
-            # K-Means
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-            kmeans_labels = kmeans.fit_predict(self.data)
-            # Calculate metrics
-            kmeans_silhouette = (silhouette_score(self.data, kmeans_labels)
-                                 if len(set(kmeans_labels)) > 2 else 0)
-            kmeans_score = kmeans_silhouette
+        # Parallel K-Means evaluation
+        kmeans_results = Parallel(n_jobs=self.n_jobs)(
+            delayed(eval_kmeans)(n_clusters) for n_clusters in self.n_clusters_values
+        )
 
-            # Comparation of the score
-            if kmeans_score > best_score_kmeans:
+        for n_clusters, labels, score in kmeans_results:
+            if score > best_score_kmeans:
                 self.best_params[0] = n_clusters
-                best_score_kmeans = kmeans_score
-                self.kmeans_labels = kmeans_labels
+                best_score_kmeans = score
+                self.kmeans_labels = labels
 
-            for linkage in self.linkage_values:
-                # Agglomerative Clustering
-                aggclust = AgglomerativeClustering(n_clusters=n_clusters,
-                                                   linkage=linkage)
-                aggclust_labels = aggclust.fit_predict(self.data)
+        # Parallel Agglomerative Clustering evaluation
+        aggclust_params = [(n_clusters, linkage)
+                           for n_clusters in self.n_clusters_values
+                           for linkage in self.linkage_values]
+        aggclust_results = Parallel(n_jobs=self.n_jobs)(
+            delayed(eval_agglomerative)(n_clusters, linkage)
+            for n_clusters, linkage in aggclust_params
+        )
 
-                # Calculate metrics
-                aggclust_silhouette = (silhouette_score(self.data,
-                                                        aggclust_labels)
-                                       if len(set(aggclust_labels)) > 2
-                                       else 0)
-                aggclust_score = aggclust_silhouette
+        for n_clusters, linkage, labels, score in aggclust_results:
+            if score > best_score_aggclust:
+                best_score_aggclust = score
+                self.best_params[1] = n_clusters
+                self.best_params[2] = linkage
+                self.agglomerative_labels = labels
 
-                if aggclust_score > best_score_aggclust:
-                    best_score_aggclust = aggclust_score
-                    self.best_params[1] = n_clusters
-                    self.best_params[2] = linkage
-                    self.agglomerative_labels = aggclust_labels
+        # Parallel DBSCAN evaluation
+        dbscan_params = [(eps, min_samples)
+                         for eps in self.eps_values
+                         for min_samples in self.min_samples_values]
+        dbscan_results = Parallel(n_jobs=self.n_jobs)(
+            delayed(eval_dbscan)(eps, min_samples)
+            for eps, min_samples in dbscan_params
+        )
 
-        for eps in self.eps_values:
-            for min_samples in self.min_samples_values:
-                # DBSCAN
-                dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-                dbscan_labels = dbscan.fit_predict(self.data)
+        for eps, min_samples, labels, score in dbscan_results:
+            if score > best_score_dbscan:
+                self.best_params[3] = eps
+                self.best_params[4] = min_samples
+                best_score_dbscan = score
+                self.dbscan_labels = labels
 
-                # Calculate metrics
-                silhouette = (silhouette_score(self.data, dbscan_labels)
-                              if len(set(dbscan_labels)) > 2 else 0)
-                dbscan_score = silhouette
-                if dbscan_score > best_score_dbscan:
-                    self.best_params[3] = eps
-                    self.best_params[4] = min_samples
-                    best_score_dbscan = dbscan_score
-                    self.dbscan_labels = dbscan_labels
+        # Select best overall algorithm
+        kmeans_score = best_score_kmeans
+        aggclust_score = best_score_aggclust
+        dbscan_score = best_score_dbscan
 
         if kmeans_score > self.best_score_total:
             self.best_score_total = kmeans_score
             self.best_algorithm = "K-Means"
-            self.best_labels = kmeans_labels
+            self.best_labels = self.kmeans_labels
 
         if aggclust_score > self.best_score_total:
             self.best_score_total = aggclust_score
             self.best_algorithm = "Agglomerative Clustering"
-            self.best_labels = aggclust_labels
+            self.best_labels = self.agglomerative_labels
 
         if dbscan_score > self.best_score_total and self.cluster is None:
             self.best_score_total = dbscan_score
             self.best_algorithm = "DBSCAN"
-            self.best_labels = dbscan_labels
+            self.best_labels = self.dbscan_labels
 
         if self.best_algorithm == "DBSCAN":
             clusters = max(self.best_labels) + 1
@@ -244,6 +265,6 @@ class ClusteringSelector:
         row_modes = labels_df.mode(axis=1)
         not_nan_index = row_modes.index[~row_modes.isna().any(axis=1)]
         for x in not_nan_index:
-            row_modes[0][x] = self.get_best_labels()[x]
+            row_modes.loc[x, 0] = self.get_best_labels()[x]
 
         return np.array(row_modes[0])
